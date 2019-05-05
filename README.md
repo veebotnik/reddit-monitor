@@ -1,6 +1,6 @@
 # reddit-monitor
 
-This is a really simple subreddit forwarder built on [NodeJS](https://nodejs.org). It forwards everything submitted to a subreddit to a [Telegram](https://telegram.org/) group.
+This is a really simple subreddit forwarder built on [NodeJS](https://nodejs.org). It forwards post submitted to a [Telegram](https://telegram.org/) group.
 
 It grabs the last 20 (default) posts from the subreddit and monitors for new posts every 60 seconds. When a new post is detected, it composes and sends a message to the Telegram chat.
 
