@@ -2,7 +2,7 @@
 
 This is a really simple subreddit forwarder built on [NodeJS](https://nodejs.org). It forwards everything submitted to a subreddit to a [Telegram](https://telegram.org/) group.
 
-It grabs the last 20 (default) posts from the subreddit and monitors it every 60 seconds for changes. When a change is detected, it composes and sends a message to the Telegram chat.
+It grabs the last 20 (default) posts from the subreddit and monitors for new posts every 60 seconds. When a new post is detected, it composes and sends a message to the Telegram chat.
 
 ## Usage
 
