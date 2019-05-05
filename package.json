@@ -1,0 +1,22 @@
+{
+  "name": "reddit-monitor",
+  "version": "1.0.0",
+  "description": "Monitor subreddit for activity",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "forever": "forever start index.js",
+    "stop": "forever stop index.js"
+  },
+  "author": "veebotnik",
+  "license": "MIT",
+  "dependencies": {
+    "console-stamp": "^0.2.7",
+    "deepmerge": "^3.2.0",
+    "forever": "^1.0.0",
+    "messaging-api-telegram": "^0.7.11",
+    "moment-timezone": "^0.5.25",
+    "properties": "^1.2.1",
+    "reddit-wrapper-v2": "^1.1.6"
+  }
+}
