@@ -109,8 +109,8 @@ const main = (config) => {
 					let responseData = response[1];
 					let postData = responseData.data.children[0].data;
 
-					if ((postData.is_robot_indexable === false && postData.author === '[deleted]')
-						|| (postData.is_robot_indexable === false && postData.is_crosspostable === false)) {
+					if ((postData.is_robot_indexable === false && postData.author === '[deleted]') // deleted
+						|| (postData.is_robot_indexable === false && postData.is_crosspostable === false)) { // removed by mod/automod
 						// is_robot_indexable === false
 						// no_follow === true // false on normal & deleted, true on removed
 						// is_crosspostable === false
