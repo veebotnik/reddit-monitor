@@ -50,7 +50,7 @@ const setupProperties = () => new Promise((resolve, reject) => {
 
 const setupServices = (config) => new Promise((resolve, reject) => {
 	try {
-		const telegram = TelegramClient.connect(config.telegram.api);
+		const telegram = (config.telegram.api ? TelegramClient.connect(config.telegram.api) : false);
 		const reddit = new redditWrapper({
 			// Options for Reddit Wrapper
 			username: config.reddit.username,
@@ -168,25 +168,26 @@ const main = (resource) => {
 									}
 								});
 						}
-						if ((flair && suspiciousFlairPresent)
-							|| resource.config.reddit.suspicious.authors.indexOf(postData.author) > -1) {
-							localData.lastSuspiciousTime = postData.created_utc_obj;
-							localData.lastSuspiciousPermalink = 'https://www.reddit.com' + postData.permalink;
-							let message = '*' + postData.title + '*';
-							if (postData.selftext) {
-								message += '\n' + postData.selftext
-							} else if (postData.url) {
-								message += '\n' + postData.url;
+						if (resource.services.telegram) {
+							if ((flair && suspiciousFlairPresent)
+								|| resource.config.reddit.suspicious.authors.indexOf(postData.author) > -1) {
+								localData.lastSuspiciousTime = postData.created_utc_obj;
+								localData.lastSuspiciousPermalink = 'https://www.reddit.com' + postData.permalink;
+								let message = '*' + postData.title + '*';
+								if (postData.selftext) {
+									message += '\n' + postData.selftext
+								} else if (postData.url) {
+									message += '\n' + postData.url;
+								}
+								message += '\n\nSubmitted by `' + 'u/' + postData.author + '` ' + (flair ? '_' + flair + '_' + ' ' : '') + 'at ' + moment(postData.created_utc_obj, localData.timeFormat).tz(resource.config.bot.internal.timeZone).format(localData.timeFormat) + ' via [reddit](https://www.reddit.com' + postData.permalink + ')';
+								resource.services.telegram.sendMessage(resource.config.telegram.chat, message, {
+									disable_web_page_preview: false,
+									disable_notification: false,
+									parse_mode: 'Markdown'
+								});
 							}
-							message += '\n\nSubmitted by `' + 'u/' + postData.author + '` ' + (flair ? '_' + flair + '_' + ' ' : '') + 'at ' + moment(postData.created_utc_obj, localData.timeFormat).tz(resource.config.bot.internal.timeZone).format(localData.timeFormat) + ' via [reddit](https://www.reddit.com' + postData.permalink + ')';
-							resource.services.telegram.sendMessage(resource.config.telegram.chat, message, {
-								disable_web_page_preview: false,
-								disable_notification: false,
-								parse_mode: 'Markdown'
-							});
 						}
 					}
-					// console.log(message, postData);
 				}
 			}
 			localData.before.unshift(...arrayOfNames);
