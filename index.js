@@ -73,6 +73,25 @@ const setupServices = (config) => new Promise((resolve, reject) => {
 				}
 			}
 		});
+		discordClient.on('message', message => {
+			if (message.content === '!last') {
+				if (localData.lastSuspiciousTime && localData.lastSuspiciousPermalink) {
+					const now = moment(new Date()); //todays date
+					const end = moment(localData.lastSuspiciousTime); // another date
+					const duration = moment.duration(now.diff(end));
+					const days = duration.asDays();
+					const hours = duration.asHours();
+					const minutes = duration.asMinutes();
+					let diffMessage = (days ? days + ' days, ' : '');
+					diffMessage += (hours ? hours + ' hours, ' : '');
+					diffMessage += (minutes ? minutes + ' minutes' : '');
+					diffMessage += (seconds ? ' and ' + seconds + ' seconds' : '');
+					message.reply('The last HOT was ' + diffMessage + ' ago: ' + localData.lastSuspiciousPermalink);
+				} else {
+					message.reply('Unknown... waiting for the next one.');
+				}
+			}
+		})
 		const services = {
 			telegram: telegram,
 			reddit: reddit,
@@ -89,7 +108,8 @@ let localData = {
 	before: [],
 	firstRequest: true,
 	timeFormat: 'HH:mm:ss ZZ MM/DD/YYYY',
-	lastSuspicious: null
+	lastSuspiciousTime: null,
+	lastSuspiciousPermalink: null
 };
 
 const main = (resource) => {
@@ -122,7 +142,7 @@ const main = (resource) => {
 				if (localData.firstRequest === false) {
 					const flair = postData.author_flair_text;
 					const flairRegexCheck = new RegExp(resource.config.reddit.suspicious.flair.join('|'));
-					const suspiciousFlairPresent = flair.match(flairRegexCheck) === null ? false : true;
+					const suspiciousFlairPresent = (flair && flair.match(flairRegexCheck) === null ? false : true);
 					if (discordBroadcastChannels.length) {
 						const newPostRichEmbed = new Discord.RichEmbed()
 							.setTitle(postData.title)
@@ -149,8 +169,9 @@ const main = (resource) => {
 								});
 						}
 						if ((flair && suspiciousFlairPresent)
-							|| suspiciousAuthors.indexOf(postData.author) > -1) {
-							localData.lastSuspicious = postData.created_utc_obj;
+							|| resource.config.reddit.suspicious.authors.indexOf(postData.author) > -1) {
+							localData.lastSuspiciousTime = postData.created_utc_obj;
+							localData.lastSuspiciousPermalink = 'https://www.reddit.com' + postData.permalink;
 							let message = '*' + postData.title + '*';
 							if (postData.selftext) {
 								message += '\n' + postData.selftext
