@@ -91,6 +91,9 @@ const setupServices = (config) => new Promise((resolve, reject) => {
 					message.reply('Unknown... waiting for the next one.');
 				}
 			}
+			if (message.content === '!about') {
+				message.reply('check out my source code! https://github.com/veebotnik/reddit-monitor');
+			}
 		})
 		const services = {
 			telegram: telegram,

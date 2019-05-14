@@ -9,6 +9,13 @@
     "stop": "forever stop index.js"
   },
   "author": "veebotnik",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/veebotnik/reddit-monitor"
+  },
+  "bugs": {
+    "url": "https://github.com/veebotnik/reddit-monitor/issues"
+  },
   "license": "MIT",
   "dependencies": {
     "console-stamp": "^0.2.7",
