@@ -146,6 +146,11 @@ const main = (resource) => {
 					const flair = postData.author_flair_text;
 					const flairRegexCheck = new RegExp(resource.config.reddit.suspicious.flair.join('|'));
 					const suspiciousFlairPresent = (flair && flair.match(flairRegexCheck) === null ? false : true);
+					if ((flair && suspiciousFlairPresent)
+						|| resource.config.reddit.suspicious.authors.indexOf(postData.author) > -1) {
+						localData.lastSuspiciousTime = postData.created_utc_obj;
+						localData.lastSuspiciousPermalink = 'https://www.reddit.com' + postData.permalink;
+					}
 					if (discordBroadcastChannels.length) {
 						const newPostRichEmbed = new Discord.RichEmbed()
 							.setTitle(postData.title)
@@ -174,8 +179,6 @@ const main = (resource) => {
 						if (resource.services.telegram) {
 							if ((flair && suspiciousFlairPresent)
 								|| resource.config.reddit.suspicious.authors.indexOf(postData.author) > -1) {
-								localData.lastSuspiciousTime = postData.created_utc_obj;
-								localData.lastSuspiciousPermalink = 'https://www.reddit.com' + postData.permalink;
 								let message = '*' + postData.title + '*';
 								if (postData.selftext) {
 									message += '\n' + postData.selftext
