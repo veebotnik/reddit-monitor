@@ -7,6 +7,11 @@ const moment = require('moment-timezone');
 const redditWrapper = require('reddit-wrapper-v2');
 const { TelegramClient } = require('messaging-api-telegram');
 
+const Discord = require('discord.js');
+const discordClient = new Discord.Client();
+
+let discordBroadcastChannels = [];
+
 const propOptions = {
 	path: true,
 	namespaces: true
@@ -15,7 +20,10 @@ const propOptions = {
 let defaultConfig = {
 	bot: {
 		internal: {
-			trackBefore: 20,
+			reddit: {
+				trackBefore: 20,
+				poll: 60
+			},
 			timeZone: 'America/New_York'
 		}
 	}
@@ -25,6 +33,14 @@ const setupProperties = () => new Promise((resolve, reject) => {
 	prop.parse(path.join(__dirname, 'config.properties'), propOptions, (err, data) => {
 		if (!err) {
 			data = merge(defaultConfig, data);
+			if (data.reddit.suspicious) {
+				if (data.reddit.suspicious.authors) {
+					data.reddit.suspicious.authors = data.reddit.suspicious.authors.split(/\s*,\s*/);
+				}
+				if (data.reddit.suspicious.flair) {
+					data.reddit.suspicious.flair = data.reddit.suspicious.flair.split(/\s*,\s*/);
+				}
+			}
 	  		resolve(data)
 		} else {
 			reject(err)
@@ -32,15 +48,10 @@ const setupProperties = () => new Promise((resolve, reject) => {
 	})
 });
 
-let localData = {
-	after: null,
-	before: [],
-	firstRequest: true,
-	timeFormat: 'HH:mm:ss ZZ MM/DD/YYYY'
-};
-const main = (config) => {
-	const telegram = TelegramClient.connect(config.telegram.api);
-	const reddit = new redditWrapper({
+const setupServices = (config) => new Promise((resolve, reject) => {
+	try {
+		const telegram = TelegramClient.connect(config.telegram.api);
+		const reddit = new redditWrapper({
 			// Options for Reddit Wrapper
 			username: config.reddit.username,
 			password: config.reddit.password,
@@ -52,16 +63,47 @@ const main = (config) => {
 			retry_delay: 1,
 			logs: false
 		});
+		discordClient.login(config.discord.token);
+		discordClient.on('ready', () => {
+		  console.log(`Logged into Discord as ${discordClient.user.tag}!`);
+		  for (let key of discordClient.channels) {
+				if (key[1].type === 'text' && (
+					key[1].name.toLowerCase().indexOf(config.discord.notifyChannel) > -1)) {
+					discordBroadcastChannels.push(key);
+				}
+			}
+		});
+		const services = {
+			telegram: telegram,
+			reddit: reddit,
+			discord: discordClient
+		};
+		resolve({services: services, config: config});
+	} catch (e) {
+		reject(e);
+	}
+});
+
+let localData = {
+	after: null,
+	before: [],
+	firstRequest: true,
+	timeFormat: 'HH:mm:ss ZZ MM/DD/YYYY',
+	lastSuspicious: null
+};
+
+const main = (resource) => {
 	let iterationData = {
-		limit: config.bot.internal.trackBefore
+		limit: resource.config.bot.internal.reddit.trackBefore
 	};
 	if (localData.firstRequest === false) {
 		iterationData.before = localData.before.length ? localData.before[0] : null;
 	}
 	// console.log(localData.before, iterationData);
-	reddit.api.get(config.reddit.subreddit + '/new', iterationData)
+	resource.services.reddit.api.get(resource.config.reddit.subreddit + '/new', iterationData)
 	// reddit.api.get('/by_id/t3_bkw34o') // removed but not deleted
 	// reddit.api.get('/by_id/t3_bkvymb') // normal
+	// reddit.api.get('/by_id/t3_bmjxpr') // normal with flair
 	.then(function(response) {
 		let responseCode = response[0];
 		let responseData = response[1];
@@ -78,32 +120,65 @@ const main = (config) => {
 				postData.created_utc_obj = date;
 				arrayOfNames.push(postData.name);
 				if (localData.firstRequest === false) {
-					let message = '*' + postData.title + '*';
-					if (postData.selftext) {
-						message += '\n' + postData.selftext
-					} else if (postData.url) {
-						message += '\n' + postData.url;
+					const flair = postData.author_flair_text;
+					const flairRegexCheck = new RegExp(resource.config.reddit.suspicious.flair.join('|'));
+					const suspiciousFlairPresent = flair.match(flairRegexCheck) === null ? false : true;
+					if (discordBroadcastChannels.length) {
+						const newPostRichEmbed = new Discord.RichEmbed()
+							.setTitle(postData.title)
+							.setURL('https://www.reddit.com' + postData.permalink)
+							.setAuthor('u/' + postData.author + (flair ? ' (' + flair + ')' : ''), 'https://b.thumbs.redditmedia.com/aRUO-zIbXgMTDVJOcxKjY8P6rGkakMdyVXn4k1VN-Mk.png', 'https://www.reddit.com/u/' + postData.author)
+							.setDescription(postData.selfText ? postData.selfText : postData.url)
+							.setImage(postData.url)
+							.setTimestamp()
+							.setFooter('Submitted by u/' + postData.author + ' ' + (flair ? '(' + flair + ')' + ' ' : '') + 'at ' + moment(postData.created_utc_obj, localData.timeFormat).tz(resource.config.bot.internal.timeZone).format(localData.timeFormat));
+						for (let j = discordBroadcastChannels.length - 1; j >= 0; j--) {
+							discordBroadcastChannels[j][1].send(newPostRichEmbed)
+								.then((message) => {
+									if (flair) {
+										message.react('🏢');
+										if (suspiciousFlairPresent) {
+											message.react('🔥');
+											discordBroadcastChannels[j][1].send('HOT @everyone :point_up_2: https://www.reddit.com' + postData.permalink);
+										}
+									}
+									if (resource.config.reddit.suspicious.authors.indexOf(postData.author) > -1) {
+										message.react('⚠');
+										discordBroadcastChannels[j][1].send(':warning: HOT POTENTIAL @everyone :point_up_2: https://www.reddit.com' + postData.permalink + '\nKnown HOT user posted');
+									}
+								});
+						}
+						if ((flair && suspiciousFlairPresent)
+							|| suspiciousAuthors.indexOf(postData.author) > -1) {
+							localData.lastSuspicious = postData.created_utc_obj;
+							let message = '*' + postData.title + '*';
+							if (postData.selftext) {
+								message += '\n' + postData.selftext
+							} else if (postData.url) {
+								message += '\n' + postData.url;
+							}
+							message += '\n\nSubmitted by `' + 'u/' + postData.author + '` ' + (flair ? '_' + flair + '_' + ' ' : '') + 'at ' + moment(postData.created_utc_obj, localData.timeFormat).tz(resource.config.bot.internal.timeZone).format(localData.timeFormat) + ' via [reddit](https://www.reddit.com' + postData.permalink + ')';
+							resource.services.telegram.sendMessage(resource.config.telegram.chat, message, {
+								disable_web_page_preview: false,
+								disable_notification: false,
+								parse_mode: 'Markdown'
+							});
+						}
 					}
-					message += '\n\nSubmitted by `' + postData.author + '` at ' + moment(postData.created_utc_obj, localData.timeFormat).tz(config.bot.internal.timeZone).format(localData.timeFormat) + ' via [reddit](https://www.reddit.com' + postData.permalink + ')';
-					telegram.sendMessage(config.telegram.chat, message, {
-						disable_web_page_preview: false,
-						disable_notification: false,
-						parse_mode: 'Markdown'
-					});
 					// console.log(message, postData);
 				}
 			}
 			localData.before.unshift(...arrayOfNames);
 			// Don't track more than 20 (default) at a time, to save on memory
-			if (localData.before.length > config.bot.internal.trackBefore) {
-				localData.before.splice(config.bot.internal.trackBefore);
+			if (localData.before.length > resource.config.bot.internal.reddit.trackBefore) {
+				localData.before.splice(resource.config.bot.internal.reddit.trackBefore);
 			}
 			localData.firstRequest = false;
 			console.log('Tick!');
 		} else {
 			let detectDeleted = function(beforeId) {
 				console.log('Checking post', beforeId, 'to see if it was deleted...');
-				reddit.api.get('/by_id/' + beforeId) 
+				resource.services.reddit.api.get('/by_id/' + beforeId) 
 				.then(function(response) {
 					let responseCode = response[0];
 					let responseData = response[1];
@@ -118,7 +193,7 @@ const main = (config) => {
 						localData.before.shift(); // remove and try again
 						console.log('Yes it was deleted! Trying a previous post with new ID', localData.before[0], localData.before);
 						if (localData.before.length) {
-							detectDeleted(localData.before[0]);
+							detectDeleted(localData.before[0]);// recurse 
 						} else {
 							// reject('No more entries to look for');
 							// this should mean the next tick should have a null 'before' parameter
@@ -147,11 +222,13 @@ const main = (config) => {
 };
 
 setupProperties()
-	.then((config) => {
-		main(config);
+	.then(setupServices)
+	.then((resource) => {
+		main(resource);
+		const pollInterval = parseInt(resource.config.bot.internal.reddit.poll) * 1000;
 		let intervalRef = setInterval(() => {
-			main(config);
-		}, 60000);
+			main(resource);
+		}, pollInterval);
 	})
 	.catch(reason => {
 		console.error('App error:', reason);

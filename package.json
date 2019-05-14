@@ -13,6 +13,7 @@
   "dependencies": {
     "console-stamp": "^0.2.7",
     "deepmerge": "^3.2.0",
+    "discord.js": "^11.4.2",
     "forever": "^1.0.0",
     "messaging-api-telegram": "^0.7.11",
     "moment-timezone": "^0.5.25",
