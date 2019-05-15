@@ -79,17 +79,19 @@ const setupServices = (config) => new Promise((resolve, reject) => {
 					const now = moment(new Date()); //todays date
 					const end = moment(localData.lastSuspiciousTime); // another date
 					const duration = moment.duration(now.diff(end));
-					const days = duration.asDays();
-					const hours = duration.asHours();
-					const minutes = duration.asMinutes();
-					const seconds = duration.asSeconds();
+
+					const days = now.diff(end, 'days');
+					const hours = now.diff(end, 'hours');
+					const minutes = now.diff(end, 'minutes');
+					const seconds = now.diff(end, 'seconds');
+
 					let diffMessage = (days ? days + ' days, ' : '');
 					diffMessage += (hours ? hours + ' hours, ' : '');
-					diffMessage += (minutes ? minutes + ' minutes' : '');
-					diffMessage += (seconds ? ' and ' + seconds + ' seconds' : '');
-					message.reply('The last HOT was ' + diffMessage + ' ago: ' + localData.lastSuspiciousPermalink);
+					diffMessage += (minutes ? minutes + ' minutes and ' : '');
+					diffMessage += (seconds ? seconds + ' seconds' : '');
+					message.reply('the last HOT was ' + diffMessage + ' ago: ' + localData.lastSuspiciousPermalink);
 				} else {
-					message.reply('Unknown... waiting for the next one.');
+					message.reply('my records are empty :(');
 				}
 			}
 			if (message.content === '!about') {
