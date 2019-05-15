@@ -80,9 +80,18 @@ const setupServices = (config) => new Promise((resolve, reject) => {
 					const end = moment(localData.lastSuspiciousTime); // another date
 
 					const days = now.diff(end, 'days');
-					const hours = now.diff(end, 'hours');
-					const minutes = now.diff(end, 'minutes');
-					const seconds = now.diff(end, 'seconds');
+					let hours = now.diff(end, 'hours');
+					let minutes = now.diff(end, 'minutes');
+					let seconds = now.diff(end, 'seconds');
+					if (minutes) {
+						seconds -= minutes * 60;
+					}
+					if (hours) {
+						minutes -= hours * 60;
+					}
+					if (days) {
+						hours -= 24 * days;
+					}
 
 					let diffMessage = (days ? days + ' days, ' : '');
 					diffMessage += (hours ? hours + ' hours, ' : '');
