@@ -82,6 +82,7 @@ const setupServices = (config) => new Promise((resolve, reject) => {
 					const days = duration.asDays();
 					const hours = duration.asHours();
 					const minutes = duration.asMinutes();
+					const seconds = duration.asSeconds();
 					let diffMessage = (days ? days + ' days, ' : '');
 					diffMessage += (hours ? hours + ' hours, ' : '');
 					diffMessage += (minutes ? minutes + ' minutes' : '');
