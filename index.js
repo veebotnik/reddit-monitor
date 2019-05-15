@@ -24,7 +24,8 @@ let defaultConfig = {
 				trackBefore: 20,
 				poll: 60
 			},
-			timeZone: 'America/New_York'
+			timeZone: 'America/New_York',
+			timeFormat: 'HH:mm:ss ZZ MM/DD/YYYY',
 		}
 	}
 };
@@ -117,11 +118,11 @@ const setupServices = (config) => new Promise((resolve, reject) => {
 	}
 });
 
+let firstRequest = true; // global bot session internal - not persistent
+
 let localData = {
 	after: null,
 	before: [],
-	firstRequest: true,
-	timeFormat: 'HH:mm:ss ZZ MM/DD/YYYY',
 	lastSuspiciousTime: null,
 	lastSuspiciousPermalink: null
 };
@@ -130,7 +131,7 @@ const main = (resource) => {
 	let iterationData = {
 		limit: resource.config.bot.internal.reddit.trackBefore
 	};
-	if (localData.firstRequest === false) {
+	if (firstRequest === false) {
 		iterationData.before = localData.before.length ? localData.before[0] : null;
 	}
 	// console.log(localData.before, iterationData);
@@ -153,7 +154,7 @@ const main = (resource) => {
 				date.setTime(postData.created_utc * 1000);
 				postData.created_utc_obj = date;
 				arrayOfNames.push(postData.name);
-				if (localData.firstRequest === false) {
+				if (firstRequest === false) {
 					const flair = postData.author_flair_text;
 					const flairRegexCheck = new RegExp(resource.config.reddit.suspicious.flair.join('|'));
 					const suspiciousFlairPresent = (flair && flair.match(flairRegexCheck) === null ? false : true);
@@ -170,7 +171,7 @@ const main = (resource) => {
 							.setDescription(postData.selfText ? postData.selfText : postData.url)
 							.setImage(postData.url)
 							.setTimestamp()
-							.setFooter('Submitted by u/' + postData.author + ' ' + (flair ? '(' + flair + ')' + ' ' : '') + 'at ' + moment(postData.created_utc_obj, localData.timeFormat).tz(resource.config.bot.internal.timeZone).format(localData.timeFormat));
+							.setFooter('Submitted by u/' + postData.author + ' ' + (flair ? '(' + flair + ')' + ' ' : '') + 'at ' + moment(postData.created_utc_obj, resource.config.bot.internal.timeFormat).tz(resource.config.bot.internal.timeZone).format(resource.config.bot.internal.timeFormat));
 						for (let j = discordBroadcastChannels.length - 1; j >= 0; j--) {
 							discordBroadcastChannels[j][1].send(newPostRichEmbed)
 								.then((message) => {
@@ -196,7 +197,7 @@ const main = (resource) => {
 								} else if (postData.url) {
 									message += '\n' + postData.url;
 								}
-								message += '\n\nSubmitted by `' + 'u/' + postData.author + '` ' + (flair ? '_' + flair + '_' + ' ' : '') + 'at ' + moment(postData.created_utc_obj, localData.timeFormat).tz(resource.config.bot.internal.timeZone).format(localData.timeFormat) + ' via [reddit](https://www.reddit.com' + postData.permalink + ')';
+								message += '\n\nSubmitted by `' + 'u/' + postData.author + '` ' + (flair ? '_' + flair + '_' + ' ' : '') + 'at ' + moment(postData.created_utc_obj, resource.config.bot.internal.timeFormat).tz(resource.config.bot.internal.timeZone).format(resource.config.bot.internal.timeFormat) + ' via [reddit](https://www.reddit.com' + postData.permalink + ')';
 								resource.services.telegram.sendMessage(resource.config.telegram.chat, message, {
 									disable_web_page_preview: false,
 									disable_notification: false,
@@ -212,7 +213,7 @@ const main = (resource) => {
 			if (localData.before.length > resource.config.bot.internal.reddit.trackBefore) {
 				localData.before.splice(resource.config.bot.internal.reddit.trackBefore);
 			}
-			localData.firstRequest = false;
+			firstRequest = false;
 			console.log('Tick!');
 		} else {
 			let detectDeleted = function(beforeId) {
