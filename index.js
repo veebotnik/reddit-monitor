@@ -78,7 +78,6 @@ const setupServices = (config) => new Promise((resolve, reject) => {
 				if (localData.lastSuspiciousTime && localData.lastSuspiciousPermalink) {
 					const now = moment(new Date()); //todays date
 					const end = moment(localData.lastSuspiciousTime); // another date
-					const duration = moment.duration(now.diff(end));
 
 					const days = now.diff(end, 'days');
 					const hours = now.diff(end, 'hours');
