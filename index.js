@@ -179,12 +179,12 @@ const main = (resource) => {
 										message.react('🏢');
 										if (suspiciousFlairPresent) {
 											message.react('🔥');
-											discordBroadcastChannels[j][1].send('HOT @everyone :point_up_2: https://www.reddit.com' + postData.permalink);
+											discordBroadcastChannels[j][1].send('HOT @everyone :point_up_2: (' + postData.title + ') https://www.reddit.com' + postData.permalink);
 										}
 									}
 									if (resource.config.reddit.suspicious.authors.indexOf(postData.author) > -1) {
 										message.react('⚠');
-										discordBroadcastChannels[j][1].send(':warning: HOT POTENTIAL @everyone :point_up_2: https://www.reddit.com' + postData.permalink + '\nKnown HOT user posted');
+										discordBroadcastChannels[j][1].send(':warning: POTENTIAL @everyone :point_up_2: https://www.reddit.com' + postData.permalink + '\nKnown HOT user posted');
 									}
 								});
 						}
