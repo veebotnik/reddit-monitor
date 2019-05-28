@@ -106,7 +106,11 @@ const setupServices = (config) => new Promise((resolve, reject) => {
 			if (message.content === '!about') {
 				message.reply('check out my source code! https://github.com/veebotnik/reddit-monitor');
 			}
-		})
+		});
+		discordClient.on('error', (err) => {
+			console.log('Discord error', err);
+			setTimeout(() => {discordClient.login(config.discord.token);}, 5000);
+		});
 		const services = {
 			telegram: telegram,
 			reddit: reddit,
@@ -214,7 +218,6 @@ const main = (resource) => {
 				localData.before.splice(resource.config.bot.internal.reddit.trackBefore);
 			}
 			firstRequest = false;
-			console.log('Tick!');
 		} else {
 			let detectDeleted = function(beforeId) {
 				console.log('Checking post', beforeId, 'to see if it was deleted...');
@@ -245,7 +248,6 @@ const main = (resource) => {
 				})
 				.catch(function(err) {
 					console.log('Reddit Error: ', err);
-					reject(err);
 				});
 			};
 			if (localData.before.length) {
@@ -254,10 +256,10 @@ const main = (resource) => {
 				// ignore it - the next request will not include a before
 			}
 		}
+		console.log('Tick!');
 	})
 	.catch(function(err) {
 		console.log('Reddit Error: ', err);
-		reject(err);
 	});
 };
 
