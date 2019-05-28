@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "forever": "forever start index.js",
-    "stop": "forever stop index.js"
+    "start": "node index.js"
   },
   "author": "veebotnik",
   "repository": {
@@ -21,7 +20,6 @@
     "console-stamp": "^0.2.7",
     "deepmerge": "^3.2.0",
     "discord.js": "^11.4.2",
-    "forever": "^1.0.0",
     "messaging-api-telegram": "^0.7.11",
     "moment-timezone": "^0.5.25",
     "properties": "^1.2.1",

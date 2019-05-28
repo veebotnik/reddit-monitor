@@ -27,6 +27,13 @@ let defaultConfig = {
 			timeZone: 'America/New_York',
 			timeFormat: 'HH:mm:ss ZZ MM/DD/YYYY',
 		}
+	},
+	discord: {
+		notifyChannel: 'bot-commands',
+		activity: {
+			type: 'WATCHING',
+			status: 'reddit'
+		}
 	}
 };
 
@@ -66,15 +73,17 @@ const setupServices = (config) => new Promise((resolve, reject) => {
 		});
 		discordClient.login(config.discord.token);
 		discordClient.on('ready', () => {
-		  console.log(`Logged into Discord as ${discordClient.user.tag}!`);
-		  for (let key of discordClient.channels) {
+			console.log(`Logged into Discord as ${discordClient.user.tag}!`);
+			for (let key of discordClient.channels) {
 				if (key[1].type === 'text' && (
 					key[1].name.toLowerCase().indexOf(config.discord.notifyChannel) > -1)) {
 					discordBroadcastChannels.push(key);
 				}
 			}
+			discordClient.user.setActivity(config.discord.activity.status, { type: config.discord.activity.type });
 		});
 		discordClient.on('message', message => {
+			if (!message.content.startsWith('!') || message.author.bot) return;
 			if (message.content === '!last') {
 				if (localData.lastSuspiciousTime && localData.lastSuspiciousPermalink) {
 					const now = moment(new Date()); //todays date
