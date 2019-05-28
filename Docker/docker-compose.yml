@@ -1,0 +1,52 @@
+version: "3"
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  mongo:
+    driver: local
+
+services:
+### MongoDB ##############################################
+  mongo:
+    build: ./mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - .data/mongo:/data/db
+    networks:
+      - backend
+### MongoWebUI ################################################
+  mongo-webui:
+    build:
+      context: ./mongo-webui
+    restart: always
+    environment:
+      - ROOT_URL=http://localhost
+      - MONGO_URL=mongodb://mongo:27017/
+      - INSTALL_MONGO=false
+    volumes:
+      - .data/mongo-webui:/data/db
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+    depends_on:
+      - mongo
+### Reddit Monitor ################################################
+  redditmonitor:
+    build:
+      context: ../
+    ports:
+        - "22:22"
+    tty: true
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - mongo
