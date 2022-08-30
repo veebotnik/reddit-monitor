@@ -21,7 +21,7 @@
     "deepmerge": "^3.2.0",
     "discord.js": "^11.4.2",
     "messaging-api-telegram": "^0.7.11",
-    "moment-timezone": "^0.5.25",
+    "moment-timezone": "^0.5.35",
     "properties": "^1.2.1",
     "reddit-wrapper-v2": "^1.1.6"
   }
